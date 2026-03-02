@@ -1,9 +1,10 @@
-// src/app/api/create-booking/route.ts
+// src/app/api/create-booking/route.3232222ts
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { sendClientBookingConfirmation, sendConsultantBookingNotification } from '@/lib/email'
 import { generateInvoiceHTML } from '@/lib/invoice'
 import { calculateGST } from '@/lib/utils'
+
 
 export async function POST(request: NextRequest) {
   try {
