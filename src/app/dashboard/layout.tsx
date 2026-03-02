@@ -13,9 +13,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--color-bg)' }}>
       <DashboardSidebar profile={profile} />
-      <main style={{ flex: 1, padding: '32px', overflow: 'auto' }}>
+      <main style={{ flex: 1, padding: '32px', overflow: 'auto' }} className="dashboard-main">
         {children}
       </main>
+      <style>{`
+        @media (max-width: 768px) {
+          .dashboard-main {
+            padding: 80px 16px 24px !important;
+          }
+        }
+      `}</style>
     </div>
   )
 }

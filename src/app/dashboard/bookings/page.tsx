@@ -1,5 +1,7 @@
+// src/app/dashboard/bookings/page.tsx
 import { createClient } from '@/lib/supabase/server'
 import { formatINR, formatDate, formatTime } from '@/lib/utils'
+import CancelBookingButton from '@/components/CancelBookingButton'
 
 export default async function BookingsPage() {
   const supabase = await createClient()
@@ -24,39 +26,42 @@ export default async function BookingsPage() {
           <p>Share your booking link to start receiving appointments.</p>
         </div>
       ) : (
-        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ background: 'var(--color-bg-muted)' }}>
-                  {['Client', 'Date & Time', 'Duration', 'Amount', 'Payment', 'Status', ''].map(h => (
-                    <th key={h} style={{ padding: '14px 16px', textAlign: 'left', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-secondary)', borderBottom: '1px solid var(--color-border)' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {bookings.map((b: any, i: number) => (
-                  <tr key={b.id} style={{ borderBottom: i < bookings.length - 1 ? '1px solid var(--color-border)' : 'none' }}>
-                    <td style={{ padding: 16 }}>
-                      <p style={{ fontWeight: 600, marginBottom: 2 }}>{b.client_name}</p>
-                      <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>{b.client_email}</p>
-                    </td>
-                    <td style={{ padding: 16 }}>
-                      <p style={{ fontWeight: 500 }}>{formatDate(b.slot_date)}</p>
-                      <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>{formatTime(b.slot_time)}</p>
-                    </td>
-                    <td style={{ padding: 16, color: 'var(--color-text-secondary)' }}>{b.duration_minutes} min</td>
-                    <td style={{ padding: 16, fontWeight: 600 }}>{formatINR(b.amount_inr)}</td>
-                    <td style={{ padding: 16 }}><span className={`badge ${paymentStyle[b.payment_status] || 'badge-neutral'}`}>{b.payment_status}</span></td>
-                    <td style={{ padding: 16 }}><span className={`badge ${statusStyle[b.status] || 'badge-neutral'}`}>{b.status}</span></td>
-                    <td style={{ padding: 16 }}>
-                      {b.invoice_pdf_url && <a href={b.invoice_pdf_url} target="_blank" className="btn btn-ghost btn-sm" style={{ fontSize: '0.8rem' }}>📄 Invoice</a>}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {bookings.map((b: any) => (
+            <div key={b.id} className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+              <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                <div style={{ width: 48, height: 48, borderRadius: 12, background: b.status === 'cancelled' ? 'var(--color-error-bg)' : 'var(--color-bg-muted)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
+                    {new Date(b.slot_date).toLocaleDateString('en-IN', { month: 'short' })}
+                  </span>
+                  <span style={{ fontSize: '1.25rem', fontWeight: 700, color: b.status === 'cancelled' ? 'var(--color-error)' : 'var(--color-primary)', lineHeight: 1 }}>
+                    {new Date(b.slot_date).getDate()}
+                  </span>
+                </div>
+                <div>
+                  <p style={{ fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 2 }}>{b.client_name}</p>
+                  <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: 2 }}>{b.client_email}</p>
+                  <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
+                    {formatDate(b.slot_date)} · {formatTime(b.slot_time)} · {b.duration_minutes} min
+                  </p>
+                  {b.client_notes && (
+                    <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', marginTop: 4, fontStyle: 'italic' }}>"{b.client_notes}"</p>
+                  )}
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <span style={{ fontWeight: 600, fontSize: '1.1rem' }}>{formatINR(b.amount_inr)}</span>
+                <span className={`badge ${paymentStyle[b.payment_status] || 'badge-neutral'}`}>{b.payment_status}</span>
+                <span className={`badge ${statusStyle[b.status] || 'badge-neutral'}`}>{b.status}</span>
+                {b.invoice_pdf_url && (
+                  <a href={b.invoice_pdf_url} target="_blank" className="btn btn-ghost btn-sm" style={{ fontSize: '0.8rem' }}>📄 Invoice</a>
+                )}
+                {b.status === 'confirmed' && (
+                  <CancelBookingButton bookingId={b.id} clientName={b.client_name} />
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
