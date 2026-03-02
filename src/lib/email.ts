@@ -326,5 +326,58 @@ export async function sendCancellationEmail({
     to: recipientEmail,
     subject: `Booking Cancelled — ${formatDate(slotDate)} at ${formatTime(slotTime)}`,
     html: baseTemplate(content),
+  })}
+
+  // 5. Invoice ready email
+export async function sendInvoiceEmail({
+  clientEmail,
+  clientName,
+  consultantName,
+  invoiceNumber,
+  invoiceUrl,
+  totalInr,
+  slotDate,
+}: {
+  clientEmail: string
+  clientName: string
+  consultantName: string
+  invoiceNumber: string
+  invoiceUrl: string
+  totalInr: number
+  slotDate: string
+}) {
+  const content = `
+    <h2 style="margin:0 0 8px;color:#1a1a2e;font-size:24px;">Your Invoice is Ready 🧾</h2>
+    <p style="margin:0 0 24px;color:#5a5a72;">Payment confirmed. Your GST invoice is attached below.</p>
+
+    <div style="background:#f4f4f0;border-radius:12px;padding:20px;margin-bottom:24px;">
+      <table style="width:100%;border-collapse:collapse;">
+        ${[
+          ['Invoice No.', invoiceNumber],
+          ['Consultant', consultantName],
+          ['Date', formatDate(slotDate)],
+          ['Amount Paid', formatINR(totalInr)],
+        ].map(([label, value]) => `
+          <tr>
+            <td style="padding:8px 0;color:#9a9aaa;font-size:14px;width:120px;">${label}</td>
+            <td style="padding:8px 0;color:#1a1a2e;font-weight:500;font-size:14px;">${value}</td>
+          </tr>
+        `).join('')}
+      </table>
+    </div>
+
+    <a href="${invoiceUrl}" target="_blank" style="display:inline-block;background:#1a1a2e;color:white;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:600;font-size:15px;margin-bottom:20px;">
+      📄 View & Download Invoice
+    </a>
+
+    <p style="color:#9a9aaa;font-size:13px;margin-top:16px;">
+      This invoice opens as a web page. Use your browser's Print → Save as PDF to download it.
+    </p>
+  `
+
+  return sendEmail({
+    to: clientEmail,
+    subject: `Invoice ${invoiceNumber} — ${consultantName}`,
+    html: baseTemplate(content),
   })
 }

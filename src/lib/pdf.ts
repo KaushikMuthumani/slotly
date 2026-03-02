@@ -38,25 +38,3 @@ export async function uploadInvoiceToStorage(
     return null
   }
 }
-```
-
----
-
-**Final step — add `SUPABASE_SERVICE_ROLE_KEY` to your env**
-
-You need this in `.env.local`:
-```
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-```
-
-Get it from **Supabase → Settings → API → service_role key** (the long one, keep it secret).
-
-Also add it in **Vercel → Settings → Environment Variables**.
-
----
-
-**Then commit:**
-```
-git add .
-git commit -m "invoice generation on mark as paid with storage upload and email"
-git push
