@@ -3,11 +3,13 @@ import { notFound } from 'next/navigation'
 import { formatINR, generateTimeSlots } from '@/lib/utils'
 import BookingForm from '@/components/BookingForm'
 
-export default async function BookingPage({ params }: { params: { slug: string } }) {
+export default async function BookingPage({ params }: { params: Promise<{ slug: string }> }) {
+
+  const { slug } = await params
   const supabase = await createClient()
 
   const { data: profile } = await supabase
-    .from('profiles').select('*').eq('slug', params.slug).eq('onboarding_complete', true).single()
+    .from('profiles').select('*').eq('slug', slug).eq('onboarding_complete', true).single()
 
   if (!profile) notFound()
 
@@ -38,20 +40,32 @@ export default async function BookingPage({ params }: { params: { slug: string }
         <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: 32, alignItems: 'start' }}>
           <div className="card" style={{ position: 'sticky', top: 24 }}>
             <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, fontSize: 28 }}>
-              <span style={{ color: 'var(--color-accent)', fontWeight: 700 }}>{profile.full_name?.charAt(0)?.toUpperCase()}</span>
+              <span style={{ color: 'var(--color-accent)', fontWeight: 700 }}>
+                {profile.full_name?.charAt(0)?.toUpperCase()}
+              </span>
             </div>
             <h2 style={{ fontSize: '1.5rem', marginBottom: 4 }}>{profile.full_name}</h2>
             <p style={{ marginBottom: 16 }}>{profile.profession}</p>
-            {profile.bio && <p style={{ fontSize: '0.9375rem', marginBottom: 20, lineHeight: 1.7, paddingBottom: 20, borderBottom: '1px solid var(--color-border)' }}>{profile.bio}</p>}
+
+            {profile.bio && (
+              <p style={{ fontSize: '0.9375rem', marginBottom: 20, lineHeight: 1.7, paddingBottom: 20, borderBottom: '1px solid var(--color-border)' }}>
+                {profile.bio}
+              </p>
+            )}
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '0.9375rem' }}>💰 Consultation Fee</span>
-                <span style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--color-primary)' }}>{formatINR(profile.fee_inr)}</span>
+                <span style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--color-primary)' }}>
+                  {formatINR(profile.fee_inr)}
+                </span>
               </div>
+
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '0.9375rem' }}>⏱ Duration</span>
                 <span style={{ fontWeight: 500 }}>{profile.session_duration} minutes</span>
               </div>
+
               {profile.gstin && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '0.9375rem' }}>🧾 GST Invoice</span>
