@@ -284,7 +284,9 @@ export async function sendCancellationEmail({
   slotDate,
   slotTime,
   isConsultant,
+  reason,
 }: {
+  reason?: string
   recipientEmail: string
   recipientName: string
   otherPartyName: string
@@ -310,6 +312,11 @@ export async function sendCancellationEmail({
         `).join('')}
       </table>
     </div>
+    ${reason ? `
+<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:14px;margin-bottom:16px;">
+  <p style="margin:0;font-size:14px;color:#dc2626;"><strong>Reason:</strong> ${reason}</p>
+</div>
+` : ''}
 
     <p style="color:#5a5a72;font-size:14px;">If you have any questions, please contact the ${isConsultant ? 'client' : 'consultant'} directly.</p>
     ${!isConsultant ? `<a href="${APP_URL}" style="display:inline-block;background:#1a1a2e;color:white;padding:12px 24px;border-radius:10px;text-decoration:none;font-weight:600;font-size:15px;">Book Again →</a>` : ''}

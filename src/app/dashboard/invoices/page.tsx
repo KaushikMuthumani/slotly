@@ -1,10 +1,15 @@
 import { createClient } from '@/lib/supabase/server'
 import { formatINR, formatDate } from '@/lib/utils'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 
 export default async function InvoicesPage() {
   const supabase = await createClient()
+
   const { data: { user } } = await supabase.auth.getUser()
+
+  
+  if (!user) redirect('/auth/login')
   const { data: profile } = await supabase.from('profiles').select('plan, gstin').eq('id', user!.id).single()
   const { data: invoices } = await supabase.from('invoices').select('*').eq('consultant_id', user!.id).order('created_at', { ascending: false })
 

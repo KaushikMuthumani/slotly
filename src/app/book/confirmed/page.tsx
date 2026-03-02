@@ -1,6 +1,10 @@
-import Link from 'next/link'
+export default async function BookingConfirmedPage({ 
+  searchParams 
+}: { 
+  searchParams: Promise<{ name?: string; date?: string; time?: string; consultant?: string }>
+}) {
+  const params = await searchParams
 
-export default function BookingConfirmedPage({ searchParams }: { searchParams: { name?: string; date?: string; time?: string; consultant?: string } }) {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--color-bg)' }}>
       <div style={{ background: 'white', borderBottom: '1px solid var(--color-border)', padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -14,14 +18,14 @@ export default function BookingConfirmedPage({ searchParams }: { searchParams: {
           <div style={{ fontSize: 64, marginBottom: 20 }}>✅</div>
           <h1 style={{ fontSize: '2rem', marginBottom: 12 }}>Booking Confirmed!</h1>
           <p style={{ fontSize: '1.1rem', marginBottom: 32 }}>
-            Your appointment has been booked successfully. Check your email for confirmation and invoice details.
+            Your appointment has been booked successfully. Check your email for confirmation details.
           </p>
-          {(searchParams.name || searchParams.date) && (
+          {(params.consultant || params.date) && (
             <div className="card" style={{ marginBottom: 32, textAlign: 'left' }}>
               {[
-                searchParams.consultant && { label: 'Consultant', value: searchParams.consultant },
-                searchParams.date && { label: 'Date', value: searchParams.date },
-                searchParams.time && { label: 'Time', value: searchParams.time },
+                params.consultant && { label: 'Consultant', value: params.consultant },
+                params.date && { label: 'Date', value: params.date },
+                params.time && { label: 'Time', value: params.time },
               ].filter(Boolean).map((item: any) => (
                 <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--color-border)', fontSize: '0.9375rem' }}>
                   <span style={{ color: 'var(--color-text-muted)' }}>{item.label}</span>
@@ -32,7 +36,7 @@ export default function BookingConfirmedPage({ searchParams }: { searchParams: {
           )}
           <div className="card" style={{ background: 'var(--color-bg-muted)', border: 'none', marginBottom: 24 }}>
             <p style={{ fontSize: '0.9375rem', margin: 0 }}>
-              📧 A confirmation email with your GST invoice has been sent to your email address.
+              📧 A confirmation email has been sent to your email address.
             </p>
           </div>
         </div>

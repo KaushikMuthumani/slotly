@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import { formatINR, formatTime, getGreeting } from '@/lib/utils'
 import CopyLinkButton from '@/components/CopyLinkButton'
 import Link from 'next/link'
@@ -6,23 +7,24 @@ import Link from 'next/link'
 export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user!.id).single()
+  if (!user) redirect('/auth/login')
+
+  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
 
   const today = new Date().toISOString().split('T')[0]
   const { data: upcomingBookings } = await supabase
-    .from('bookings').select('*').eq('consultant_id', user!.id)
+    .from('bookings').select('*').eq('consultant_id', user.id)
     .eq('status', 'confirmed').gte('slot_date', today)
     .order('slot_date', { ascending: true }).limit(5)
 
   const startOfMonth = new Date(); startOfMonth.setDate(1)
   const { data: monthBookings } = await supabase
     .from('bookings').select('amount_inr, payment_status')
-    .eq('consultant_id', user!.id).gte('created_at', startOfMonth.toISOString())
+    .eq('consultant_id', user.id).gte('created_at', startOfMonth.toISOString())
 
   const earned = monthBookings?.filter(b => b.payment_status === 'paid').reduce((s, b) => s + b.amount_inr, 0) || 0
   const totalBookings = monthBookings?.length || 0
 
-  // Use real APP_URL from env — not localhost
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://slotly-two.vercel.app'
   const bookingUrl = `${appUrl}/book/${profile?.slug}`
 
@@ -33,7 +35,6 @@ export default async function DashboardPage() {
         <p>Here's what's happening with your bookings today.</p>
       </div>
 
-      {/* Booking link banner */}
       <div className="card" style={{ marginBottom: 28, background: 'var(--color-primary)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
         <div>
           <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.875rem', marginBottom: 4 }}>Your booking link</p>
@@ -51,7 +52,6 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 32 }}>
         {[
           { label: 'Bookings This Month', value: totalBookings, icon: '📅', note: 'confirmed appointments' },
@@ -68,7 +68,6 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      {/* Upcoming bookings */}
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <h3>Upcoming Bookings</h3>
@@ -97,6 +96,9 @@ export default async function DashboardPage() {
                   <div>
                     <p style={{ fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 2 }}>{booking.client_name}</p>
                     <p style={{ fontSize: '0.875rem' }}>{formatTime(booking.slot_time)} · {booking.duration_minutes} min</p>
+                    {booking.client_notes && (
+                      <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>"{booking.client_notes}"</p>
+                    )}
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -111,7 +113,6 @@ export default async function DashboardPage() {
         )}
       </div>
 
-      {/* Upgrade banner for free users */}
       {profile?.plan === 'free' && (
         <div className="card" style={{ marginTop: 32, background: 'linear-gradient(135deg, var(--color-primary) 0%, #2d2d5e 100%)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
           <div>
