@@ -236,8 +236,15 @@ export async function generateInvoicePDFBuffer(data: InvoicePDFData): Promise<Bu
         )
       )
 
-    const pdfBlob = await pdf(React.createElement(InvoiceDoc)).toBuffer()
-    return Buffer.from(pdfBlob)
+    const pdfStream = await pdf(React.createElement(InvoiceDoc)).toBuffer()
+
+const chunks: Buffer[] = []
+
+for await (const chunk of pdfStream as any) {
+  chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+}
+
+return Buffer.concat(chunks)
   } catch (err) {
     console.error('PDF generation error:', err)
     return null

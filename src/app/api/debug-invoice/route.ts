@@ -133,11 +133,19 @@ export async function GET() {
       )
 
     const buffer = await pdf(React.createElement(TestDoc)).toBuffer()
-    results.pdfGeneration = {
-      success: true,
-      bufferSize: buffer.length,
-      isBuffer: Buffer.isBuffer(buffer),
-    }
+    let size = 0
+
+if (Buffer.isBuffer(buffer)) {
+  size = buffer.length
+} else if (buffer instanceof ReadableStream) {
+  size = 0 // stream size not directly available
+}
+
+results.pdfGeneration = {
+  success: true,
+  bufferSize: size,
+  isBuffer: Buffer.isBuffer(buffer),
+}
   } catch (e: any) {
     results.pdfGeneration = {
       success: false,
