@@ -4,11 +4,27 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { formatINR, formatTime, generateTimeSlots, DAY_NAMES, calculateGST, validateGSTIN } from '@/lib/utils'
 
+interface BlockedTime {
+  id: string
+  start_time: string
+  end_time: string
+  applies_to_days: number[]
+  label: string
+}
+
+interface PartialBlock {
+  date: string
+  start: string
+  end: string
+}
+
 interface Props {
   profile: any
   availability: any[]
   blockedDates: string[]
+  partialBlocks?: PartialBlock[]
   bookedSlots: string[]
+  blockedTimes?: BlockedTime[]
 }
 
 function getDatesForNext60Days(availability: any[], blockedDates: string[]) {
@@ -28,7 +44,24 @@ function getDatesForNext60Days(availability: any[], blockedDates: string[]) {
   return dates
 }
 
-export default function BookingForm({ profile, availability, blockedDates, bookedSlots }: Props) {
+// Returns true if a slot (HH:MM) overlaps with a blocked range (HH:MM:SS)
+function isSlotInBlockedRange(slotTime: string, blockStart: string, blockEnd: string): boolean {
+  // Normalise to HH:MM for comparison
+  const slot = slotTime.slice(0, 5)
+  const start = blockStart.slice(0, 5)
+  const end = blockEnd.slice(0, 5)
+  // A slot is blocked if it starts within [blockStart, blockEnd)
+  return slot >= start && slot < end
+}
+
+export default function BookingForm({
+  profile,
+  availability,
+  blockedDates,
+  partialBlocks = [],
+  bookedSlots,
+  blockedTimes = [],
+}: Props) {
   const router = useRouter()
   const [step, setStep] = useState<'date' | 'time' | 'details' | 'confirm'>('date')
   const [selectedDate, setSelectedDate] = useState('')
@@ -45,10 +78,34 @@ export default function BookingForm({ profile, availability, blockedDates, booke
     const dow = new Date(date).getDay()
     const dayAvail = availability.find((a: any) => a.day_of_week === dow)
     if (!dayAvail) return []
-    const allSlots = generateTimeSlots(dayAvail.start_time.slice(0, 5), dayAvail.end_time.slice(0, 5), profile.session_duration)
+
+    const allSlots = generateTimeSlots(
+      dayAvail.start_time.slice(0, 5),
+      dayAvail.end_time.slice(0, 5),
+      profile.session_duration
+    )
+
     return allSlots.filter(slot => {
+      // 1. Remove already booked slots
       if (bookedSlots.includes(`${date}_${slot}`)) return false
-      return new Date(`${date}T${slot}`) > new Date()
+
+      // 2. Remove past slots
+      if (new Date(`${date}T${slot}`) <= new Date()) return false
+
+      // 3. Remove partial date blocks (specific hours blocked on this specific date)
+      const datePartials = partialBlocks.filter(pb => pb.date === date)
+      for (const pb of datePartials) {
+        if (isSlotInBlockedRange(slot, pb.start, pb.end)) return false
+      }
+
+      // 4. Remove recurring time blocks that apply to this day of week
+      for (const bt of blockedTimes) {
+        if (bt.applies_to_days?.includes(dow)) {
+          if (isSlotInBlockedRange(slot, bt.start_time, bt.end_time)) return false
+        }
+      }
+
+      return true
     })
   }
 
@@ -61,7 +118,7 @@ export default function BookingForm({ profile, availability, blockedDates, booke
   const validateDetails = () => {
     if (!form.clientName.trim()) { setError('Please enter your name.'); return false }
     if (!form.clientEmail.trim() || !form.clientEmail.includes('@')) { setError('Please enter a valid email.'); return false }
-    if (form.clientGstin && !validateGSTIN(form.clientGstin)) { setGstinError('Invalid GSTIN format (e.g. 27AAPFU0939F1ZV)'); return false }
+    if (form.clientGstin && !validateGSTIN(form.clientGstin)) { setGstinError('Invalid GSTIN (e.g. 27AAPFU0939F1ZV)'); return false }
     setError(''); setGstinError('')
     return true
   }
@@ -87,24 +144,20 @@ export default function BookingForm({ profile, availability, blockedDates, booke
         }),
       })
       const data = await res.json()
-      if (!res.ok) {
-        setError(data.error || 'Booking failed. Please try again.')
-        setLoading(false)
-        return
-      }
+      if (!res.ok) { setError(data.error || 'Booking failed. Please try again.'); setLoading(false); return }
       const params = new URLSearchParams({
         consultant: profile.full_name,
         date: formatDisplayDate(selectedDate),
         time: formatTime(selectedTime),
       })
       router.push(`/book/confirmed?${params.toString()}`)
-    } catch (err) {
+    } catch {
       setError('Network error. Please check your connection and try again.')
       setLoading(false)
     }
   }
 
-  const datesByMonth: Record<string, { date: string; dayOfWeek: number }[]> = {}
+  const datesByMonth: Record<string, typeof availableDates> = {}
   availableDates.forEach(d => {
     const month = d.date.slice(0, 7)
     if (!datesByMonth[month]) datesByMonth[month] = []
@@ -115,13 +168,20 @@ export default function BookingForm({ profile, availability, blockedDates, booke
     <div className="card">
       {/* Step indicator */}
       <div style={{ display: 'flex', marginBottom: 28, borderBottom: '2px solid var(--color-border)', paddingBottom: 20 }}>
-        {[{ key: 'date', label: '1. Pick Date' }, { key: 'time', label: '2. Pick Time' }, { key: 'details', label: '3. Your Details' }, { key: 'confirm', label: '4. Confirm' }].map((s) => {
+        {[
+          { key: 'date', label: '1. Pick Date' },
+          { key: 'time', label: '2. Pick Time' },
+          { key: 'details', label: '3. Your Details' },
+          { key: 'confirm', label: '4. Confirm' },
+        ].map((s) => {
           const steps = ['date', 'time', 'details', 'confirm']
           const currentIdx = steps.indexOf(step)
           const thisIdx = steps.indexOf(s.key)
           return (
             <div key={s.key} style={{ flex: 1, textAlign: 'center' }}>
-              <span style={{ fontSize: '0.8125rem', fontWeight: thisIdx <= currentIdx ? 700 : 400, color: thisIdx <= currentIdx ? 'var(--color-primary)' : 'var(--color-text-muted)' }}>{s.label}</span>
+              <span style={{ fontSize: '0.8125rem', fontWeight: thisIdx <= currentIdx ? 700 : 400, color: thisIdx <= currentIdx ? 'var(--color-primary)' : 'var(--color-text-muted)' }}>
+                {s.label}
+              </span>
               {thisIdx <= currentIdx && <div style={{ height: 2, background: 'var(--color-primary)', marginTop: 4, borderRadius: 1 }} />}
             </div>
           )
@@ -130,7 +190,7 @@ export default function BookingForm({ profile, availability, blockedDates, booke
 
       {error && <div className="alert alert-error" style={{ marginBottom: 20 }}><span>⚠️</span> {error}</div>}
 
-      {/* STEP: Pick Date */}
+      {/* STEP 1: Pick Date */}
       {step === 'date' && (
         <div>
           <h3 style={{ marginBottom: 6, fontFamily: 'Sora', fontWeight: 600, fontSize: '1.15rem' }}>Select a Date</h3>
@@ -148,8 +208,17 @@ export default function BookingForm({ profile, availability, blockedDates, booke
                 </p>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {dates.map(({ date, dayOfWeek }) => (
-                    <button key={date} onClick={() => { setSelectedDate(date); setSelectedTime(''); setStep('time') }}
-                      style={{ padding: '10px 14px', border: `2px solid ${selectedDate === date ? 'var(--color-primary)' : 'var(--color-border)'}`, borderRadius: 'var(--radius-md)', background: selectedDate === date ? 'var(--color-primary)' : 'white', color: selectedDate === date ? 'white' : 'var(--color-text-primary)', cursor: 'pointer', fontFamily: 'Sora, sans-serif', fontSize: '0.875rem', transition: 'all 0.15s', textAlign: 'center', minWidth: 72 }}>
+                    <button key={date}
+                      onClick={() => { setSelectedDate(date); setSelectedTime(''); setStep('time') }}
+                      style={{
+                        padding: '10px 14px',
+                        border: `2px solid ${selectedDate === date ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                        borderRadius: 'var(--radius-md)',
+                        background: selectedDate === date ? 'var(--color-primary)' : 'white',
+                        color: selectedDate === date ? 'white' : 'var(--color-text-primary)',
+                        cursor: 'pointer', fontFamily: 'Sora, sans-serif', fontSize: '0.875rem',
+                        transition: 'all 0.15s', textAlign: 'center', minWidth: 72,
+                      }}>
                       <div style={{ fontWeight: 600 }}>{new Date(date).getDate()}</div>
                       <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>{DAY_NAMES[dayOfWeek].slice(0, 3)}</div>
                     </button>
@@ -161,7 +230,7 @@ export default function BookingForm({ profile, availability, blockedDates, booke
         </div>
       )}
 
-      {/* STEP: Pick Time */}
+      {/* STEP 2: Pick Time */}
       {step === 'time' && (
         <div>
           <button onClick={() => setStep('date')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', fontSize: '0.875rem', marginBottom: 16, padding: 0 }}>
@@ -179,7 +248,15 @@ export default function BookingForm({ profile, availability, blockedDates, booke
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: 10 }}>
               {availableSlots.map(slot => (
                 <button key={slot} onClick={() => { setSelectedTime(slot); setStep('details') }}
-                  style={{ padding: '12px 8px', border: `2px solid ${selectedTime === slot ? 'var(--color-primary)' : 'var(--color-border)'}`, borderRadius: 'var(--radius-md)', background: selectedTime === slot ? 'var(--color-primary)' : 'white', color: selectedTime === slot ? 'white' : 'var(--color-text-primary)', cursor: 'pointer', fontFamily: 'Sora, sans-serif', fontSize: '0.9rem', fontWeight: 500, transition: 'all 0.15s', textAlign: 'center' }}>
+                  style={{
+                    padding: '12px 8px',
+                    border: `2px solid ${selectedTime === slot ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                    borderRadius: 'var(--radius-md)',
+                    background: selectedTime === slot ? 'var(--color-primary)' : 'white',
+                    color: selectedTime === slot ? 'white' : 'var(--color-text-primary)',
+                    cursor: 'pointer', fontFamily: 'Sora, sans-serif', fontSize: '0.9rem',
+                    fontWeight: 500, transition: 'all 0.15s', textAlign: 'center',
+                  }}>
                   {formatTime(slot)}
                 </button>
               ))}
@@ -188,14 +265,14 @@ export default function BookingForm({ profile, availability, blockedDates, booke
         </div>
       )}
 
-      {/* STEP: Details */}
+      {/* STEP 3: Details */}
       {step === 'details' && (
         <div>
           <button onClick={() => setStep('time')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', fontSize: '0.875rem', marginBottom: 16, padding: 0 }}>
             ← {formatDisplayDate(selectedDate)} at {formatTime(selectedTime)}
           </button>
           <h3 style={{ marginBottom: 6, fontFamily: 'Sora', fontWeight: 600, fontSize: '1.15rem' }}>Your Details</h3>
-          <p style={{ fontSize: '0.875rem', marginBottom: 20 }}>We'll send your confirmation and invoice to this email.</p>
+          <p style={{ fontSize: '0.875rem', marginBottom: 20 }}>We'll send your confirmation to this email.</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div className="form-group">
               <label>Full Name *</label>
@@ -225,7 +302,7 @@ export default function BookingForm({ profile, availability, blockedDates, booke
         </div>
       )}
 
-      {/* STEP: Confirm */}
+      {/* STEP 4: Confirm */}
       {step === 'confirm' && (
         <div>
           <h3 style={{ marginBottom: 6, fontFamily: 'Sora', fontWeight: 600, fontSize: '1.15rem' }}>Review Your Booking</h3>
@@ -272,7 +349,7 @@ export default function BookingForm({ profile, availability, blockedDates, booke
 
           <div className="alert alert-warning" style={{ marginBottom: 20 }}>
             <span>💳</span>
-            <span>UPI payment via Razorpay will be enabled soon. The consultant will contact you to collect payment.</span>
+            <span>The consultant will contact you to collect payment.</span>
           </div>
 
           <div style={{ display: 'flex', gap: 12 }}>

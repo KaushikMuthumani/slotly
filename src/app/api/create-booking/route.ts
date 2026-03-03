@@ -1,64 +1,53 @@
-// src/app/api/create-booking/route.3232222ts
+// src/app/api/create-booking/route.ts
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { sendClientBookingConfirmation, sendConsultantBookingNotification } from '@/lib/email'
-import { generateInvoiceHTML } from '@/lib/invoice'
 import { calculateGST } from '@/lib/utils'
-
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const {
-      consultantId,
-      clientName,
-      clientEmail,
-      clientPhone,
-      clientNotes,
-      clientGstin,
-      slotDate,
-      slotTime,
-      durationMinutes,
-      amountInr,
+      consultantId, clientName, clientEmail, clientPhone,
+      clientNotes, clientGstin, slotDate, slotTime,
+      durationMinutes, amountInr,
     } = body
+
+    if (!consultantId || !clientName || !clientEmail || !slotDate || !slotTime) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    }
 
     const supabase = await createClient()
 
-    // 1. Check slot is still available (race condition fix)
-    const { data: existingBooking } = await supabase
-      .from('bookings')
-      .select('id')
+    // 1. Race condition check — is slot still free?
+    const { data: existing } = await supabase
+      .from('bookings').select('id')
       .eq('consultant_id', consultantId)
       .eq('slot_date', slotDate)
-      .eq('slot_time', slotTime)
+      .eq('slot_time', slotTime + ':00')
       .eq('status', 'confirmed')
-      .single()
+      .maybeSingle()
 
-    if (existingBooking) {
+    if (existing) {
       return NextResponse.json(
         { error: 'This slot was just booked by someone else. Please pick another slot.' },
         { status: 409 }
       )
     }
 
-    // 2. Check free plan limit
+    // 2. Free plan limit check
     const { data: profile } = await supabase
       .from('profiles')
       .select('plan, full_name, profession, gstin, email')
-      .eq('id', consultantId)
-      .single()
+      .eq('id', consultantId).single()
 
     if (profile?.plan === 'free') {
       const startOfMonth = new Date()
-      startOfMonth.setDate(1)
-      startOfMonth.setHours(0, 0, 0, 0)
-
+      startOfMonth.setDate(1); startOfMonth.setHours(0, 0, 0, 0)
       const { count } = await supabase
-        .from('bookings')
-        .select('id', { count: 'exact' })
+        .from('bookings').select('id', { count: 'exact', head: true })
         .eq('consultant_id', consultantId)
         .gte('created_at', startOfMonth.toISOString())
-
       if ((count || 0) >= 10) {
         return NextResponse.json(
           { error: 'This consultant has reached their monthly booking limit. Please try again next month.' },
@@ -68,16 +57,12 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. Generate invoice number
-    const { data: invoiceNumData } = await supabase.rpc('generate_invoice_number')
-    const invoiceNumber = invoiceNumData || `SLY-${Date.now()}`
+    const year = new Date().getFullYear()
+    const invoiceNumber = `SLY-${year}-${String(Date.now()).slice(-6)}`
 
-    // 4. Calculate GST
-    const gst = calculateGST(amountInr, false) // assume intra-state for now
-
-    // 5. Create booking
+    // 4. Create booking
     const { data: booking, error: bookingError } = await supabase
-      .from('bookings')
-      .insert({
+      .from('bookings').insert({
         consultant_id: consultantId,
         client_name: clientName,
         client_email: clientEmail,
@@ -91,75 +76,35 @@ export async function POST(request: NextRequest) {
         payment_status: 'pending',
         status: 'confirmed',
         invoice_number: invoiceNumber,
-      })
-      .select()
-      .single()
+      }).select().single()
 
-    if (bookingError) throw bookingError
+    if (bookingError) throw new Error(bookingError.message)
 
-    // 6. Create invoice record (if consultant has GSTIN = Pro feature)
-    if (profile?.gstin && profile?.plan !== 'free') {
-      const today = new Date().toISOString().split('T')[0]
-      await supabase.from('invoices').insert({
-        booking_id: booking.id,
-        consultant_id: consultantId,
-        invoice_number: invoiceNumber,
-        invoice_date: today,
-        consultant_name: profile.full_name,
-        consultant_gstin: profile.gstin,
-        client_name: clientName,
-        client_email: clientEmail,
-        client_gstin: clientGstin || null,
-        subtotal_inr: gst.subtotal,
-        cgst_rate: 9,
-        sgst_rate: 9,
-        igst_rate: 0,
-        cgst_amount: gst.cgst,
-        sgst_amount: gst.sgst,
-        igst_amount: 0,
-        total_inr: gst.total,
-        service_description: 'Professional Consultation Services',
-        sac_code: '9983',
-      })
-    }
-
-    // 7. Send emails (non-blocking — don't fail booking if email fails)
-    try {
-      await Promise.all([
-        sendClientBookingConfirmation({
-          clientName,
-          clientEmail,
-          consultantName: profile?.full_name || 'Your Consultant',
-          consultantProfession: profile?.profession || '',
-          slotDate,
-          slotTime,
-          duration: durationMinutes,
-          amountInr,
-          hasGst: !!profile?.gstin && profile?.plan !== 'free',
-        }),
-        sendConsultantBookingNotification({
-          consultantEmail: profile?.email || '',
-          consultantName: profile?.full_name || '',
-          clientName,
-          clientEmail,
-          clientPhone,
-          clientNotes,
-          slotDate,
-          slotTime,
-          duration: durationMinutes,
-          amountInr,
-        }),
-      ])
-    } catch (emailErr) {
-      console.error('Email sending failed (booking still created):', emailErr)
-    }
+    // 5. Send emails (non-blocking)
+    const gst = calculateGST(amountInr, false)
+    Promise.all([
+      sendClientBookingConfirmation({
+        clientName, clientEmail,
+        consultantName: profile?.full_name || 'Your Consultant',
+        consultantProfession: profile?.profession || '',
+        slotDate, slotTime,
+        duration: durationMinutes,
+        amountInr: profile?.gstin ? gst.total : amountInr,
+        hasGst: !!profile?.gstin,
+      }),
+      sendConsultantBookingNotification({
+        consultantEmail: profile?.email || '',
+        consultantName: profile?.full_name || '',
+        clientName, clientEmail, clientPhone, clientNotes,
+        slotDate, slotTime,
+        duration: durationMinutes,
+        amountInr: profile?.gstin ? gst.total : amountInr,
+      }),
+    ]).catch(e => console.error('Booking emails failed:', e))
 
     return NextResponse.json({ success: true, bookingId: booking.id })
   } catch (error: any) {
-    console.error('Booking creation error:', error)
-    return NextResponse.json(
-      { error: error.message || 'Failed to create booking' },
-      { status: 500 }
-    )
+    console.error('create-booking error:', error)
+    return NextResponse.json({ error: error.message || 'Failed to create booking' }, { status: 500 })
   }
 }
