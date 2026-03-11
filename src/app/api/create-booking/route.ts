@@ -18,13 +18,14 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = await createClient()
+    const cleanTime = (slotTime || '').slice(0,5) + ':00'
 
     // 1. Race condition check — is slot still free?
     const { data: existing } = await supabase
       .from('bookings').select('id')
       .eq('consultant_id', consultantId)
       .eq('slot_date', slotDate)
-      .eq('slot_time', slotTime + ':00')
+      .eq('slot_time', cleanTime)
       .eq('status', 'confirmed')
       .maybeSingle()
 
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
         client_notes: clientNotes || null,
         client_gstin: clientGstin || null,
         slot_date: slotDate,
-        slot_time: slotTime + ':00',
+        slot_time: cleanTime,
         duration_minutes: durationMinutes,
         amount_inr: amountInr,
         payment_status: 'pending',

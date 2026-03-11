@@ -172,7 +172,7 @@ export default function BookingForm({
           clientEmail: form.email.trim(),
           clientPhone: form.phone.trim(),
           slotDate: selectedDate,
-          slotTime: selectedTime + ':00',
+          slotTime: selectedTime,
           durationMinutes: profile.session_duration || profile.slot_duration_minutes || 30,
           amountInr: dynamicPrice,
           notes: form.notes.trim(),

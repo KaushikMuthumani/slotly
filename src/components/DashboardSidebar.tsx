@@ -10,6 +10,8 @@ const NAV_ITEMS = [
   { href: '/dashboard/bookings', label: 'Bookings', icon: '📅' },
   { href: '/dashboard/availability', label: 'Availability', icon: '🕐' },
   { href: '/dashboard/invoices', label: 'Invoices', icon: '🧾' },
+  { href: '/dashboard/briefs', label: 'AI Briefs', icon: '🤖' },
+{ href: '/dashboard/pricing', label: 'Dynamic Pricing', icon: '💰' },
   { href: '/dashboard/settings', label: 'Settings', icon: '⚙️' },
 ]
 
