@@ -1,9 +1,9 @@
 // src/lib/email.ts
-// All Resend email functions for Slotly
+// All Resend email functions for zlotra
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://slotly-two.vercel.app'
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://zlotra.vercel.app'
 
 interface SendEmailParams {
   to: string
@@ -24,7 +24,7 @@ async function sendEmail({ to, subject, html }: SendEmailParams) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: `Slotly <${FROM_EMAIL}>`,
+        from: `zlotra <${FROM_EMAIL}>`,
         to: [to],
         subject,
         html,
@@ -83,13 +83,13 @@ function baseTemplate(content: string) {
       <div style="width:34px;height:34px;background:#e8a838;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;">
         <span style="color:#1a1a2e;font-weight:700;font-size:18px;">S</span>
       </div>
-      <span style="color:white;font-size:20px;font-weight:600;letter-spacing:-0.5px;">Slotly</span>
+      <span style="color:white;font-size:20px;font-weight:600;letter-spacing:-0.5px;">zlotra</span>
     </div>
     <div style="padding:28px;">
       ${content}
     </div>
     <div style="padding:16px 28px;background:#f4f4f0;border-top:1px solid #e8e8e2;text-align:center;">
-      <p style="margin:0;color:#9a9aaa;font-size:12px;">© 2025 Slotly. Made with ❤️ in India.</p>
+      <p style="margin:0;color:#9a9aaa;font-size:12px;">© 2025 zlotra. Made with ❤️ in India.</p>
     </div>
   </div>
 </body>

@@ -1,15 +1,17 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
 export default function SignupPage() {
+  const router = useRouter()
   const supabase = createClient()
-  const [form, setForm] = useState({ fullName: '', email: '', password: '', confirmPassword: '' })
+  const [form, setForm] = useState({ email: '', password: '', confirmPassword: '' })
   const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
@@ -19,80 +21,113 @@ export default function SignupPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    if (!form.fullName.trim()) return setError('Please enter your full name.')
-    if (form.password.length < 8) return setError('Password must be at least 8 characters.')
-    if (form.password !== form.confirmPassword) return setError('Passwords do not match.')
+    if (form.password !== form.confirmPassword) { setError('Passwords do not match.'); return }
+    if (form.password.length < 6) { setError('Password must be at least 6 characters.'); return }
     setLoading(true)
-    const { error: signupError } = await supabase.auth.signUp({
+    const { data, error: signupError } = await supabase.auth.signUp({
       email: form.email.trim(),
       password: form.password,
       options: {
-        data: { full_name: form.fullName.trim() },
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     })
     setLoading(false)
-    if (signupError) {
-      setError(signupError.message.includes('already registered') ? 'This email is already registered. Please sign in.' : signupError.message)
-      return
+    if (signupError) { setError(signupError.message); return }
+    // If email confirmation disabled, user is immediately available
+    if (data.user && data.session) {
+      router.push('/onboarding')
+    } else if (data.user && !data.session) {
+      // Email confirmation required
+      router.push('/auth/login?message=Check your email to confirm your account')
     }
-    setSuccess(true)
+  }
+
+  const handleGoogle = async () => {
+    setGoogleLoading(true)
+    setError('')
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    })
+    if (error) { setError(error.message); setGoogleLoading(false) }
   }
 
   return (
-    <div className="page-center">
-      <div className="auth-container animate-in">
+    <div className="page-center" style={{ padding: '16px' }}>
+      <div className="auth-container animate-in" style={{ width: '100%', maxWidth: 440 }}>
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
             <div style={{ width: 42, height: 42, borderRadius: 12, background: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <span style={{ color: 'var(--color-accent)', fontWeight: 700, fontSize: 22 }}>S</span>
             </div>
-            <span style={{ fontFamily: 'DM Serif Display', fontSize: 26, color: 'var(--color-primary)' }}>Slotly</span>
+            <span style={{ fontFamily: 'DM Serif Display', fontSize: 26, color: 'var(--color-primary)' }}>zlotra</span>
           </Link>
         </div>
-        <div className="card">
-          {success ? (
-            <div style={{ textAlign: 'center', padding: '20px 0' }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>📧</div>
-              <h3 style={{ marginBottom: 12 }}>Check your email</h3>
-              <p style={{ marginBottom: 8 }}>We sent a confirmation link to:</p>
-              <p style={{ fontWeight: 600, color: 'var(--color-primary)', marginBottom: 24 }}>{form.email}</p>
-              <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>Click the link to activate your account, then sign in.</p>
-              <div style={{ marginTop: 24 }}>
-                <Link href="/auth/login" className="btn btn-primary">Go to Sign In</Link>
-              </div>
+
+        <div className="card" style={{ padding: '28px 24px' }}>
+          <h2 style={{ marginBottom: 6, fontSize: '1.75rem' }}>Create your account</h2>
+          <p style={{ marginBottom: 28, fontSize: '0.9375rem' }}>Start accepting bookings in minutes</p>
+
+          {error && (
+            <div className="alert alert-error" style={{ marginBottom: 20 }}>
+              <span>⚠️</span> {error}
             </div>
-          ) : (
-            <>
-              <h2 style={{ marginBottom: 6, fontSize: '1.75rem' }}>Create your account</h2>
-              <p style={{ marginBottom: 28, fontSize: '0.9375rem' }}>Set up in 5 minutes. Free to start.</p>
-              {error && <div className="alert alert-error" style={{ marginBottom: 20 }}><span>⚠️</span> {error}</div>}
-              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                <div className="form-group">
-                  <label>Full Name</label>
-                  <input name="fullName" type="text" placeholder="Rahul Sharma" value={form.fullName} onChange={handleChange} required />
-                </div>
-                <div className="form-group">
-                  <label>Email Address</label>
-                  <input name="email" type="email" placeholder="rahul@example.com" value={form.email} onChange={handleChange} required />
-                </div>
-                <div className="form-group">
-                  <label>Password</label>
-                  <input name="password" type="password" placeholder="Minimum 8 characters" value={form.password} onChange={handleChange} required />
-                </div>
-                <div className="form-group">
-                  <label>Confirm Password</label>
-                  <input name="confirmPassword" type="password" placeholder="Re-enter your password" value={form.confirmPassword} onChange={handleChange} required />
-                </div>
-                <button type="submit" className="btn btn-primary btn-full btn-lg" disabled={loading}>
-                  {loading ? <><div className="spinner"></div> Creating account...</> : 'Create Account →'}
-                </button>
-              </form>
-              <p style={{ textAlign: 'center', marginTop: 24, fontSize: '0.9375rem' }}>
-                Already have an account? <Link href="/auth/login" style={{ fontWeight: 600 }}>Sign in</Link>
-              </p>
-            </>
           )}
+
+          {/* Google */}
+          <button
+            onClick={handleGoogle}
+            disabled={googleLoading || loading}
+            style={{
+              width: '100%', padding: '12px', marginBottom: 20,
+              border: '1.5px solid var(--color-border)', borderRadius: 'var(--radius-md)',
+              background: 'white', cursor: 'pointer', display: 'flex',
+              alignItems: 'center', justifyContent: 'center', gap: 10,
+              fontSize: '0.9375rem', fontWeight: 500, fontFamily: 'Sora, sans-serif',
+              transition: 'all 0.15s',
+            }}
+          >
+            {googleLoading ? (
+              <div className="spinner spinner-dark"></div>
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 48 48">
+                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                <path fill="none" d="M0 0h48v48H0z"/>
+              </svg>
+            )}
+            Continue with Google
+          </button>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+            <div style={{ flex: 1, height: 1, background: 'var(--color-border)' }} />
+            <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>or sign up with email</span>
+            <div style={{ flex: 1, height: 1, background: 'var(--color-border)' }} />
+          </div>
+
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div className="form-group">
+              <label>Email Address</label>
+              <input name="email" type="email" placeholder="rahul@example.com" value={form.email} onChange={handleChange} required />
+            </div>
+            <div className="form-group">
+              <label>Password</label>
+              <input name="password" type="password" placeholder="Min 6 characters" value={form.password} onChange={handleChange} required />
+            </div>
+            <div className="form-group">
+              <label>Confirm Password</label>
+              <input name="confirmPassword" type="password" placeholder="Repeat password" value={form.confirmPassword} onChange={handleChange} required />
+            </div>
+            <button type="submit" className="btn btn-primary btn-full btn-lg" disabled={loading || googleLoading}>
+              {loading ? <><div className="spinner"></div> Creating account...</> : 'Create Account →'}
+            </button>
+          </form>
+
+          <p style={{ textAlign: 'center', marginTop: 24, fontSize: '0.9375rem' }}>
+            Already have an account? <Link href="/auth/login" style={{ fontWeight: 600 }}>Sign in</Link>
+          </p>
         </div>
       </div>
     </div>

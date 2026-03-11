@@ -31,7 +31,7 @@ export default function DashboardSidebar({ profile }: { profile: any }) {
           <div style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <span style={{ color: 'var(--color-accent)', fontWeight: 700, fontSize: 18 }}>S</span>
           </div>
-          <span style={{ fontFamily: 'DM Serif Display', fontSize: 20, color: 'var(--color-primary)' }}>Slotly</span>
+          <span style={{ fontFamily: 'DM Serif Display', fontSize: 20, color: 'var(--color-primary)' }}>zlotra</span>
         </Link>
         <button onClick={() => setMobileOpen(false)} style={{ display: 'none', background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, color: 'var(--color-text-secondary)' }} className="mobile-close-btn">✕</button>
       </div>
@@ -79,7 +79,7 @@ export default function DashboardSidebar({ profile }: { profile: any }) {
             <div style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <span style={{ color: 'var(--color-accent)', fontWeight: 700, fontSize: 16 }}>S</span>
             </div>
-            <span style={{ fontFamily: 'DM Serif Display', fontSize: 18, color: 'var(--color-primary)' }}>Slotly</span>
+            <span style={{ fontFamily: 'DM Serif Display', fontSize: 18, color: 'var(--color-primary)' }}>zlotra</span>
           </div>
           <button onClick={() => setMobileOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 24, color: 'var(--color-primary)', padding: 4 }}>☰</button>
         </div>

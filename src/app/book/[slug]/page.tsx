@@ -61,7 +61,7 @@ export default async function BookingPage({ params }: { params: Promise<{ slug: 
         <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <span style={{ color: 'var(--color-accent)', fontWeight: 700, fontSize: 16 }}>S</span>
         </div>
-        <span style={{ fontFamily: 'DM Serif Display', fontSize: 18, color: 'var(--color-primary)' }}>Slotly</span>
+        <span style={{ fontFamily: 'DM Serif Display', fontSize: 18, color: 'var(--color-primary)' }}>zlotra</span>
       </div>
 
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '32px 16px' }}>

@@ -125,7 +125,7 @@ export default function OnboardingPage() {
             <div style={{ width: 38, height: 38, borderRadius: 10, background: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <span style={{ color: 'var(--color-accent)', fontWeight: 700, fontSize: 20 }}>S</span>
             </div>
-            <span style={{ fontFamily: 'DM Serif Display', fontSize: 24, color: 'var(--color-primary)' }}>Slotly</span>
+            <span style={{ fontFamily: 'DM Serif Display', fontSize: 24, color: 'var(--color-primary)' }}>zlotra</span>
           </div>
         </div>
 
@@ -187,7 +187,7 @@ export default function OnboardingPage() {
                 <div className="form-group">
                   <label>Your Booking URL</label>
                   <div style={{ position: 'relative' }}>
-                    <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)', fontSize: '0.875rem', pointerEvents: 'none' }}>slotly.in/</div>
+                    <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)', fontSize: '0.875rem', pointerEvents: 'none' }}>zlotra.in/</div>
                     <input type="text" placeholder="rahul-ca" value={slug} onChange={e => handleSlugChange(e.target.value)} style={{ paddingLeft: 80 }} />
                   </div>
                   {slugAvailable === true && <span style={{ color: 'var(--color-success)', fontSize: '0.8125rem' }}>✓ Available!</span>}
@@ -261,7 +261,7 @@ export default function OnboardingPage() {
                 {[
                   { label: 'Name', value: fullName },
                   { label: 'Profession', value: PROFESSIONS.find(p => p.value === profession)?.label },
-                  { label: 'Booking URL', value: `slotly.in/${slug}` },
+                  { label: 'Booking URL', value: `zlotra.in/${slug}` },
                   { label: 'Fee', value: `₹${parseInt(feeInr).toLocaleString('en-IN')}` },
                   { label: 'Session', value: `${sessionDuration} minutes` },
                   { label: 'Hours', value: `${startTime} – ${endTime}` },

@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import '../styles/globals.css'
 
 export const metadata: Metadata = {
-  title: 'Slotly — Smart Booking for Indian Consultants',
+  title: 'zlotra — Smart Booking for Indian Consultants',
   description: 'Professional booking with GST invoicing for CAs, Lawyers, and Designers. Share your link, collect UPI payments, auto-generate GST invoices.',
 }
 

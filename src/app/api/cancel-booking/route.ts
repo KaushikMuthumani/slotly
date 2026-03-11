@@ -39,7 +39,7 @@ async function sendCancelEmail(to: string, name: string, otherName: string, date
         <p style="font-size:14px;color:#6b7280;">If you have any questions, please contact us directly.</p>
       </div>
       <div style="background:#f9fafb;padding:16px 32px;border-top:1px solid #e5e7eb;">
-        <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center;">Slotly · Professional Booking Platform</p>
+        <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center;">zlotra · Professional Booking Platform</p>
       </div>
     </div>
   `
@@ -48,7 +48,7 @@ async function sendCancelEmail(to: string, name: string, otherName: string, date
     method: 'POST',
     headers: { 'Authorization': `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      from: `Slotly <${fromEmail}>`,
+      from: `zlotra <${fromEmail}>`,
       to: [to],
       subject: `Booking Cancelled — ${date}`,
       html,

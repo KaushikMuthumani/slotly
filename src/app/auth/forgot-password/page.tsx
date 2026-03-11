@@ -31,7 +31,7 @@ export default function ForgotPasswordPage() {
             <div style={{ width: 42, height: 42, borderRadius: 12, background: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <span style={{ color: 'var(--color-accent)', fontWeight: 700, fontSize: 22 }}>S</span>
             </div>
-            <span style={{ fontFamily: 'DM Serif Display', fontSize: 26, color: 'var(--color-primary)' }}>Slotly</span>
+            <span style={{ fontFamily: 'DM Serif Display', fontSize: 26, color: 'var(--color-primary)' }}>zlotra</span>
           </Link>
         </div>
         <div className="card">

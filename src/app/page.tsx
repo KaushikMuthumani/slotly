@@ -1,6 +1,6 @@
 import Link from 'next/link'
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://slotly-two.vercel.app'
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://zlotra.vercel.app'
 
 export default function HomePage() {
   return (
@@ -10,7 +10,7 @@ export default function HomePage() {
           <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <span style={{ color: 'var(--color-accent)', fontWeight: 700, fontSize: 18 }}>S</span>
           </div>
-          <span style={{ fontFamily: 'DM Serif Display', fontSize: 22, color: 'var(--color-primary)' }}>Slotly</span>
+          <span style={{ fontFamily: 'DM Serif Display', fontSize: 22, color: 'var(--color-primary)' }}>zlotra</span>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
           <Link href="/auth/login" className="btn btn-ghost btn-sm">Sign In</Link>
@@ -73,7 +73,7 @@ export default function HomePage() {
             <div style={{ fontSize: '2.5rem', fontWeight: 700, fontFamily: 'DM Serif Display', marginBottom: 4 }}>₹499</div>
             <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginBottom: 24 }}>per month + GST</p>
             <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 28 }}>
-              {['Unlimited bookings', 'Auto GST invoice PDF', 'UPI + Card payments', 'Google Calendar sync', 'Remove Slotly branding', 'Cancellation management', 'Priority email support'].map(f => (
+              {['Unlimited bookings', 'Auto GST invoice PDF', 'UPI + Card payments', 'Google Calendar sync', 'Remove zlotra branding', 'Cancellation management', 'Priority email support'].map(f => (
                 <li key={f} style={{ fontSize: '0.9375rem', display: 'flex', gap: 8 }}>
                   <span style={{ color: 'var(--color-success)' }}>✓</span> {f}
                 </li>
@@ -85,7 +85,7 @@ export default function HomePage() {
       </section>
 
       <footer style={{ textAlign: 'center', padding: '40px 24px', color: 'var(--color-text-muted)', fontSize: '0.875rem', borderTop: '1px solid var(--color-border)' }}>
-        <p>© 2025 Slotly. Made with ❤️ in India.</p>
+        <p>© 2025 zlotra. Made with ❤️ in India.</p>
       </footer>
     </div>
   )

@@ -1,6 +1,6 @@
 // src/app/api/debug-invoice/route.ts
 // TEMPORARY DEBUG ENDPOINT — DELETE AFTER FIXING
-// Visit: https://slotly-two.vercel.app/api/debug-invoice
+// Visit: https://zlotra.vercel.app/api/debug-invoice
 // This will tell you EXACTLY what is broken
 
 import { createClient } from '@/lib/supabase/server'

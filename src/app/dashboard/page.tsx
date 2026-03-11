@@ -25,7 +25,7 @@ export default async function DashboardPage() {
   const earned = monthBookings?.filter(b => b.payment_status === 'paid').reduce((s, b) => s + b.amount_inr, 0) || 0
   const totalBookings = monthBookings?.length || 0
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://slotly-two.vercel.app'
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://zlotra.vercel.app'
   const bookingUrl = `${appUrl}/book/${profile?.slug}`
 
   return (

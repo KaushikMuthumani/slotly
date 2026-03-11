@@ -1,5 +1,5 @@
 -- =============================================
--- SLOTLY - Complete Database Schema
+-- zlotra - Complete Database Schema
 -- Run this ONCE in Supabase SQL Editor
 -- =============================================
 
@@ -163,4 +163,4 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-SELECT 'Slotly database ready!' AS status;
+SELECT 'zlotra database ready!' AS status;
