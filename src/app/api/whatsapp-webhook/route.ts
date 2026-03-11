@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
     }
 
     else if (step === 'ask_name') {
-      updateData = { session_data: { ...sessionData, clientName: messageText.replace(/\b\w/g, l => l.toUpperCase()) } }
+      updateData = { session_data: { ...sessionData, clientName: messageText.replace(/\b\w/g, (l: string) => l.toUpperCase()) } }
       reply = `Great, *${updateData.session_data.clientName}*! 📧 Please share your *email address*:`
       nextStep = 'ask_email'
     }

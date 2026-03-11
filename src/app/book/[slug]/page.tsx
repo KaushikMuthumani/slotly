@@ -20,6 +20,8 @@ export default async function BookingPage({ params }: { params: Promise<{ slug: 
     { data: blockedDatesRaw },
     { data: existingBookings },
     { data: blockedTimes },
+    { data: intakeQuestions },
+    { data: pricingRules },
   ] = await Promise.all([
     supabase.from('availability').select('*').eq('user_id', profile.id).eq('is_active', true),
     supabase.from('blocked_dates')
@@ -34,14 +36,22 @@ export default async function BookingPage({ params }: { params: Promise<{ slug: 
     supabase.from('blocked_times')
       .select('*')
       .eq('user_id', profile.id),
+    supabase.from('intake_questions')
+      .select('*')
+      .eq('user_id', profile.id)
+      .eq('is_active', true)
+      .order('sort_order'),
+    supabase.from('pricing_rules')
+      .select('*')
+      .eq('user_id', profile.id)
+      .eq('is_active', true)
+      .order('priority', { ascending: false }),
   ])
 
-  // Full-day blocked dates (no start/end time)
   const fullyBlockedDates = blockedDatesRaw
     ?.filter((b: any) => !b.block_start_time)
     .map((b: any) => b.blocked_date) || []
 
-  // Partial blocks (specific hours on a specific date)
   const partialBlocks = blockedDatesRaw
     ?.filter((b: any) => b.block_start_time && b.block_end_time)
     .map((b: any) => ({
@@ -50,7 +60,6 @@ export default async function BookingPage({ params }: { params: Promise<{ slug: 
       end: b.block_end_time.slice(0, 5),
     })) || []
 
-  // Already booked slot strings: "YYYY-MM-DD_HH:MM"
   const bookedSlots = existingBookings
     ?.map((b: any) => `${b.slot_date}_${b.slot_time.slice(0, 5)}`) || []
 
@@ -59,7 +68,7 @@ export default async function BookingPage({ params }: { params: Promise<{ slug: 
       {/* Nav */}
       <div style={{ background: 'white', borderBottom: '1px solid var(--color-border)', padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 12 }}>
         <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ color: 'var(--color-accent)', fontWeight: 700, fontSize: 16 }}>S</span>
+          <span style={{ color: 'var(--color-accent)', fontWeight: 700, fontSize: 16 }}>Z</span>
         </div>
         <span style={{ fontFamily: 'DM Serif Display', fontSize: 18, color: 'var(--color-primary)' }}>zlotra</span>
       </div>
@@ -99,6 +108,18 @@ export default async function BookingPage({ params }: { params: Promise<{ slug: 
                   <span className="badge badge-success">Included</span>
                 </div>
               )}
+              {(pricingRules || []).length > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.9rem' }}>⚡ Pricing</span>
+                  <span style={{ fontSize: '0.8rem', color: '#d97706', fontWeight: 500 }}>Dynamic</span>
+                </div>
+              )}
+              {(intakeQuestions || []).length > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.9rem' }}>📋 Intake form</span>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{intakeQuestions!.length} questions</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -110,6 +131,8 @@ export default async function BookingPage({ params }: { params: Promise<{ slug: 
             partialBlocks={partialBlocks}
             bookedSlots={bookedSlots}
             blockedTimes={blockedTimes || []}
+            intakeQuestions={intakeQuestions || []}
+            pricingRules={pricingRules || []}
           />
         </div>
       </div>
